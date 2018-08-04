@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="">
+<head>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="之前在做台大李宏毅课程课后作业第一题的时候，需要用深度不同但是神经元数量相同的神经网络拟合函数曲线。但是我在初始化网络各层weight和bias的时候，受了tensorflow minist示例代码的影响，将weight和bias均初始化为0，以为这样没有问题，却发现神经网络在拟合曲线时的loss迟迟降不下来，收敛到0.087左右。后来我改变了weight和bias的初始化方式，改为xx初始化，最">
+<meta property="og:type" content="article">
+<meta property="og:title" content="神经网络参数初始化">
+<meta property="og:url" content="http://yoursite.com/2018/08/04/神经网络参数初始化/index.html">
+<meta property="og:site_name" content="个人博客">
+<meta property="og:description" content="之前在做台大李宏毅课程课后作业第一题的时候，需要用深度不同但是神经元数量相同的神经网络拟合函数曲线。但是我在初始化网络各层weight和bias的时候，受了tensorflow minist示例代码的影响，将weight和bias均初始化为0，以为这样没有问题，却发现神经网络在拟合曲线时的loss迟迟降不下来，收敛到0.087左右。后来我改变了weight和bias的初始化方式，改为xx初始化，最">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="http://yoursite.com/2018/08/04/神经网络参数初始化/net.png">
+<meta property="og:updated_time" content="2018-08-04T08:24:37.375Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="神经网络参数初始化">
+<meta name="twitter:description" content="之前在做台大李宏毅课程课后作业第一题的时候，需要用深度不同但是神经元数量相同的神经网络拟合函数曲线。但是我在初始化网络各层weight和bias的时候，受了tensorflow minist示例代码的影响，将weight和bias均初始化为0，以为这样没有问题，却发现神经网络在拟合曲线时的loss迟迟降不下来，收敛到0.087左右。后来我改变了weight和bias的初始化方式，改为xx初始化，最">
+<meta name="twitter:image" content="http://yoursite.com/2018/08/04/神经网络参数初始化/net.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2018/08/04/神经网络参数初始化/"/>
+
+
+
+
+
+  <title>神经网络参数初始化 | 个人博客</title><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">个人博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/04/神经网络参数初始化/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Younger">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">神经网络参数初始化</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-08-04T16:12:42+08:00">
+                2018-08-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>之前在做台大李宏毅课程<machine learning="" and="" having="" it="" deep="" structured="">课后作业第一题的时候，需要用深度不同但是神经元数量相同的神经网络拟合函数曲线。但是我在初始化网络各层weight和bias的时候，受了tensorflow minist示例代码的影响，将weight和bias均初始化为0，以为这样没有问题，却发现神经网络在拟合曲线时的loss迟迟降不下来，收敛到0.087左右。后来我改变了weight和bias的初始化方式，改为xx初始化，最终loss收敛到xxx。本篇文章就来说一说，为什么神经网络参数不能全部初始化为0。继而我们再讨论下，为什么神经网络参数不能全部初始化为一样的数值？(严格说来，参数全部初始化为0是参数全部初始化为同样数值的特殊情形，但是我们在分析这两种情况时，侧重点有所不同，所以分开来讲)</machine></p>
+<h1 id="参数全部初始化为零"><a href="#参数全部初始化为零" class="headerlink" title="参数全部初始化为零"></a>参数全部初始化为零</h1><p>假设我们三层神经网络如下：</p>
+<script type="math/tex; mode=display">net_0=W_0x+b_0</script><script type="math/tex; mode=display">a=tanh(net_0)</script><script type="math/tex; mode=display">net_1=W_1a+b_1</script><script type="math/tex; mode=display">y_p = tanh(net_1)\\ loss = LossFunction(y_p,y_r))</script><p>讨论的问题为，当 W_0,b_0,W_1,b_1均赋值为０的时候，神经网络中各参数更新的情况。下面先从公式角度思考。</p>
+<p>首先 $net_0,a,net_1,y_p$ 在前向计算时均为０，下面开始考虑反向传播。</p>
+<p>$\frac{\partial loss}{\partial y_p}$很容易求出来，根据矩阵求导术得出 $\frac{\partial y_p}{\partial net_1}=diag^T[(1+y_p)\odot(1-y_p)] $，$\frac{\partial net_1}{\partial a}=W_1^T$ ， $\frac{\partial net_1}{\partial W_1}=(a^T\otimes I_{m<em>m})^T$，这里设 $W_1$为 $m</em>n$的矩阵， $a$为 $n*1$的向量。则由上可推出 $\frac{\partial loss}{\partial a}=W_1^Tdiag^T[(1+y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}$，</p>
+<p>$\frac{\partial loss}{\partial W_1}=(a^T\otimes I_{m*m})^Tdiag^T[(1-y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}) $， $\frac{\partial loss}{\partial b_1}=diag^T[(1-y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}$。</p>
+<p>当 $W_0,b_0,W_1,b_1​$均赋值为０的时候， $b_1​$梯度不为０，故可被更新。由于 $a​$均为０，则 $W_1​$的梯度为０。由于 $W_1​$ 为０，则 $a​$ 的梯度为０。由于 $a​$ 的梯度为０，则 $W_0,b_0​$的梯度均为０(<font color="red">根据导数的链式法则</font>)，无法更新。</p>
+<p>下面再来考虑反向传播后的再一轮的前向计算。由上可知， $W_0,b_0,W_1$ 均未被更新，故全是０， $net_0,a$ 在前向计算时均为０。故反向传播过程未被改变。所以网络仅能通过 $b_1$学到一点知识。</p>
+<p>总结一下，当 $W_0,b_0,W_1,b_1$ 均赋值为０的时候，仅能 $b_1$能被更新， $W_0,b_0,W_1$ 均不被更新，保持为０。</p>
+<p>那么如何避免这种情况？一是不将 $W_0,b_0,W_1,b_1$均赋值为０，二是不使用 $tanh$函数，因$tanh(0)$为０，采用 $sigmoid$函数。这样$a$不为0，进而使得$W_1$梯度不为0。这样在第一轮时，$W_0$和$b_0$梯度仍然为0，但是在第二轮时，因为$W_1$的数值在第一轮时被更新了，所以$W_0$和$b_0$梯度也不再为0。</p>
+<h1 id="参数全部初始化为相同数值"><a href="#参数全部初始化为相同数值" class="headerlink" title="参数全部初始化为相同数值"></a>参数全部初始化为相同数值</h1><p>我们仍然考虑一个三层的神经网络，结构如图所示：</p>
+<p><img src="/2018/08/04/神经网络参数初始化/net.png" alt="net"></p>
+<p>在前向传播时，隐藏层每个节点的输入为<script type="math/tex">a_j=(\sum\limits_{i=1}^N {W_{ji}}*x_i)+b_j</script>，这样每个隐藏层节点将得到同样的信号。比如如果神经网络所有参数全部初始化为1，则<script type="math/tex">a_j=(\sum\limits_{i=1}^N {x_i})+1</script>。这样在前向传播过程中，从隐藏层开始，<strong>同一层</strong>所有节点的输入与输出(这里的输出指的是输入经过激活函数产生的输出)都是一样的。</p>
+<p>在反向传播梯度时，因为更新公式<script type="math/tex">\frac { \partial } { \partial W _ { i j } ^ { ( l ) } } J ( W , b ; x , y ) = a _ { j } ^ { ( l ) } \delta _ { i } ^ { ( l + 1 ) }</script>和<script type="math/tex">\frac { \partial } { \partial b _ { i } ^ { ( l ) } } J ( W , b ; x , y ) = \delta _ { i } ^ { ( l + 1 ) }</script>，从公式可知输出层和隐藏层之间所有weight的梯度都是一样的，输出层每个节点bias的梯度也都是一样的。但是！！！这里需要注意的一点是，<font color="red">输入层和隐藏层之间所有weight的梯度并不是一样的</font>，因为在这个时候，weight梯度依赖于输入的向量。假如输入的向量，每一维度并不相同，则指向隐藏层同一节点的不同weight的梯度便会不同(对于同一个i，不同$W _ { i j }$的梯度)。但是！！！指向隐藏层不同节点的weight梯度向量是相同的(不同i，同一个j，$W_{ij}$梯度均相同)。这样经过一轮反向传播后，隐藏层和输出层之间的weight均相等，隐藏层和输入层之间的weight不相等，但是当下一个x进入的时候，隐藏层每个节点的输入仍然是一样的。对称性，仍然没有被打破。</p>
+<p>综上所述，神经网络参数全部初始化为相同数值，会导致神经网络产生对称性，隐藏层多个节点也只相当于一个节点，难以充分利用到网络的结构优势和学习能力。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/07/29/矩阵求导术下/" rel="next" title="矩阵求导术(下)">
+                <i class="fa fa-chevron-left"></i> 矩阵求导术(下)
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Younger</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#参数全部初始化为零"><span class="nav-number">1.</span> <span class="nav-text">参数全部初始化为零</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参数全部初始化为相同数值"><span class="nav-number">2.</span> <span class="nav-text">参数全部初始化为相同数值</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Younger</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.bootcss.com/mathjax/2.7.1/latest.js?config=TeX-AMS-MML_HTMLorMML"></script><!-- hexo-inject:begin --><!-- Begin: Injected MathJax -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config("");
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for(i=0; i < all.length; i += 1) {
+      all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+  });
+</script>
+
+<script type="text/javascript" src="custom_mathjax_source">
+</script>
+<!-- End: Injected MathJax -->
+<!-- hexo-inject:end -->
+  
+
+
+  
+
+  
+
+</body>
+</html>
