@@ -304,12 +304,14 @@
 <h1 id="参数全部初始化为零"><a href="#参数全部初始化为零" class="headerlink" title="参数全部初始化为零"></a>参数全部初始化为零</h1><p>假设我们三层神经网络如下：</p>
 <script type="math/tex; mode=display">net_0=W_0x+b_0</script><script type="math/tex; mode=display">a=tanh(net_0)</script><script type="math/tex; mode=display">net_1=W_1a+b_1</script><script type="math/tex; mode=display">y_p = tanh(net_1)\\ loss = LossFunction(y_p,y_r))</script><p>讨论的问题为，当 W_0,b_0,W_1,b_1均赋值为０的时候，神经网络中各参数更新的情况。下面先从公式角度思考。</p>
 <p>首先 $net_0,a,net_1,y_p$ 在前向计算时均为０，下面开始考虑反向传播。</p>
-<p>$\frac{\partial loss}{\partial y_p}$很容易求出来，根据矩阵求导术得出 $\frac{\partial y_p}{\partial net_1}=diag^T[(1+y_p)\odot(1-y_p)] $，$\frac{\partial net_1}{\partial a}=W_1^T$ ， $\frac{\partial net_1}{\partial W_1}=(a^T\otimes I_{m<em>m})^T$，这里设 $W_1$为 $m</em>n$的矩阵， $a$为 $n*1$的向量。则由上可推出 $\frac{\partial loss}{\partial a}=W_1^Tdiag^T[(1+y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}$，</p>
-<p>$\frac{\partial loss}{\partial W_1}=(a^T\otimes I_{m*m})^Tdiag^T[(1-y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}) $， $\frac{\partial loss}{\partial b_1}=diag^T[(1-y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}$。</p>
-<p>当 $W_0,b_0,W_1,b_1​$均赋值为０的时候， $b_1​$梯度不为０，故可被更新。由于 $a​$均为０，则 $W_1​$的梯度为０。由于 $W_1​$ 为０，则 $a​$ 的梯度为０。由于 $a​$ 的梯度为０，则 $W_0,b_0​$的梯度均为０(<font color="red">根据导数的链式法则</font>)，无法更新。</p>
-<p>下面再来考虑反向传播后的再一轮的前向计算。由上可知， $W_0,b_0,W_1$ 均未被更新，故全是０， $net_0,a$ 在前向计算时均为０。故反向传播过程未被改变。所以网络仅能通过 $b_1$学到一点知识。</p>
+<p>$\frac{\partial loss}{\partial y_p}$很容易求出来，根据矩阵求导术得出 $\frac{\partial y_p}{\partial net_1}=diag^T[(1+y_p)\odot(1-y_p)] $，$\frac{\partial net_1}{\partial a}=W_1^T$ ， </p>
+<p>$\frac{\partial net_1}{\partial W_1}=(a^T \otimes I_{m\times m})^T$，这里设 $W_1$为 $m\times n$的矩阵， $a$为 $n\times1$的向量。则由上可推出 </p>
+<p>$\frac{\partial loss}{\partial a}=W_1^Tdiag^T[(1+y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}$，</p>
+<p>$\frac{\partial loss}{\partial W_1}=(a^T\otimes I_{m\times m})^Tdiag^T[(1+y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}) $， $\frac{\partial loss}{\partial b_1}=diag^T[(1+y_p)\odot(1-y_p)]\frac{\partial loss}{\partial y_p}$。</p>
+<p>当 $W_0,b_0,W_1,b_1$均赋值为０的时候， $b_1$梯度不为０，故可被更新。由于 $a$均为０，则 $W_1$的梯度为０。由于 $W_1$ 为０，则 $a$ 的梯度为０。由于 $a$ 的梯度为０，则 $W_0,b_0$的梯度均为０(<font color="red">根据导数的链式法则</font>)，无法更新。</p>
+<p>下面再来考虑反向传播后的再一轮的前向计算。由上可知， $W_0,b_0,W_1​$ 均未被更新，故全是０， $net_0,a​$ 在前向计算时均为０。故反向传播过程未被改变。所以网络仅能通过 $b_1​$学到一点知识。</p>
 <p>总结一下，当 $W_0,b_0,W_1,b_1$ 均赋值为０的时候，仅能 $b_1$能被更新， $W_0,b_0,W_1$ 均不被更新，保持为０。</p>
-<p>那么如何避免这种情况？一是不将 $W_0,b_0,W_1,b_1$均赋值为０，二是不使用 $tanh$函数，因$tanh(0)$为０，采用 $sigmoid$函数。这样$a$不为0，进而使得$W_1$梯度不为0。这样在第一轮时，$W_0$和$b_0$梯度仍然为0，但是在第二轮时，因为$W_1$的数值在第一轮时被更新了，所以$W_0$和$b_0$梯度也不再为0。</p>
+<p>那么如何避免这种情况？一是不将 $W_0,b_0,W_1,b_1​$均赋值为０，二是不使用 $tanh​$函数，因$tanh(0)​$为０，采用 $sigmoid​$函数。这样$a​$不为0，进而使得$W_1​$梯度不为0。这样在第一轮时，$W_0​$和$b_0​$梯度仍然为0，但是在第二轮时，因为$W_1​$的数值在第一轮时被更新了，所以$W_0​$和$b_0​$梯度也不再为0。</p>
 <h1 id="参数全部初始化为相同数值"><a href="#参数全部初始化为相同数值" class="headerlink" title="参数全部初始化为相同数值"></a>参数全部初始化为相同数值</h1><p>我们仍然考虑一个三层的神经网络，结构如图所示：</p>
 <p><img src="/2018/08/04/神经网络参数初始化/net.png" alt="net"></p>
 <p>在前向传播时，隐藏层每个节点的输入为<script type="math/tex">a_j=(\sum\limits_{i=1}^N {W_{ji}}*x_i)+b_j</script>，这样每个隐藏层节点将得到同样的信号。比如如果神经网络所有参数全部初始化为1，则<script type="math/tex">a_j=(\sum\limits_{i=1}^N {x_i})+1</script>。这样在前向传播过程中，从隐藏层开始，<strong>同一层</strong>所有节点的输入与输出(这里的输出指的是输入经过激活函数产生的输出)都是一样的。</p>
@@ -817,125 +819,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/08/test-my-site/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Younger">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/07/08/test-my-site/" itemprop="url">test_my_site</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-08T16:34:42+08:00">
-                2018-07-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/08/做个认真写博客的人/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1026,6 +909,125 @@
 <li>其他的想到了，再补充。</li>
 </ul>
 
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/08/test-my-site/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Younger">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/08/test-my-site/" itemprop="url">test_my_site</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-08T16:34:42+08:00">
+                2018-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            
           
         
       
