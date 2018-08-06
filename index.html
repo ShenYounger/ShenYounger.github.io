@@ -327,7 +327,7 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">data = tf.constant(np.random.randn(2000, 800))</span><br><span class="line">layer_sizes = [800 - 50 * i for i in range(0,10)]</span><br><span class="line">num_layers = len(layer_sizes)</span><br><span class="line"></span><br><span class="line">fcs = []  # To store fully connected layers&apos; output</span><br><span class="line">for i in range(0, num_layers - 1):</span><br><span class="line">    X = data if i == 0 else fcs[i - 1]</span><br><span class="line">    node_in = layer_sizes[i]</span><br><span class="line">    node_out = layer_sizes[i + 1]</span><br><span class="line">    W = tf.Variable(np.random.randn(node_in, node_out)) * 0.01 </span><br><span class="line">    fc = tf.matmul(X, W)</span><br><span class="line">    fc = tf.nn.tanh(fc)</span><br><span class="line">    fcs.append(fc)</span><br></pre></td></tr></table></figure>
 <p>这里我们创建了一个10层的神经网络，非线性变换为tanh，每一层的参数都是随机正态分布，均值为0，标准差为0.01。下图给出了每一层输出值分布的直方图。</p>
 <p><img src="https://pic4.zhimg.com/80/v2-e70e859a530b59fa9a3fef0162dd8dfd_hd.jpg" alt="img"></p>
-<p>随着层数的增加，我们看到输出值迅速向0靠拢，在后几层中，几乎所有的输出值<img src="https://www.zhihu.com/equation?tex=x" alt="x">都很接近0！回忆优化神经网络的back propagation算法，根据链式法则，gradient等于当前函数的gradient乘以后一层的gradient，这意味着输出值<img src="https://www.zhihu.com/equation?tex=x" alt="x">是计算gradient中的乘法因子，直接导致gradient很小，使得参数难以被更新！(<font color="red">不太理解作者的原意，不过从UFLDL关于反向传播的公式来看，假如反向传播的反向为从第i+1层到第i层，那么两层之间weight的更新依赖于第i层的输出，当激活函数为tanh时，第i层的输出都很接近0，这表明两层之间的weight无法更新</font>)</p>
+<p>随着层数的增加，我们看到输出值迅速向0靠拢，在后几层中，几乎所有的输出值$x$都很接近0！回忆优化神经网络的back propagation算法，根据链式法则，gradient等于当前函数的gradient乘以后一层的gradient，这意味着输出值$x$是计算gradient中的乘法因子，直接导致gradient很小，使得参数难以被更新！(<font color="red">不太理解作者的原意，不过从UFLDL关于反向传播的公式来看，假如反向传播的反向为从第i+1层到第i层，那么两层之间weight的更新依赖于第i层的输出，当激活函数为tanh时，第i层的输出都很接近0，这表明两层之间的weight无法更新</font>)</p>
 <p>让我们将初始值调大一些：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W = tf.Variable(np.random.randn(node_in, node_out))</span><br></pre></td></tr></table></figure>
 <p>均值仍然为0，标准差现在变为1，下图是每一层输出值分布的直方图：</p>
@@ -353,7 +353,7 @@
 <h2 id="Batch-Normalization-Layer"><a href="#Batch-Normalization-Layer" class="headerlink" title="Batch Normalization Layer"></a><strong>Batch Normalization Layer</strong></h2><p>Batch Normalization是一种巧妙而粗暴的方法来削弱bad initialization的影响，其基本思想是：If you want it, just make it!</p>
 <p>我们想要的是在非线性activation之前，输出值应该有比较好的分布（例如高斯分布），以便于back propagation时计算gradient，更新weight。Batch Normalization将输出值强行做一次Gaussian Normalization和线性变换：</p>
 <p><img src="https://pic2.zhimg.com/80/v2-2b14851823a6ec035cc16147eb5e04b0_hd.jpg" alt="img"></p>
-<p>Batch Normalization中所有的操作都是平滑可导，这使得back propagation可以有效运行并学到相应的参数<img src="https://www.zhihu.com/equation?tex=%5Cgamma" alt="\gamma">，<img src="https://www.zhihu.com/equation?tex=%5Cbeta" alt="\beta">。需要注意的一点是Batch Normalization在training和testing时行为有所差别。Training时<img src="https://www.zhihu.com/equation?tex=%5Cmu_%5Cmathcal%7BB%7D" alt="\mu_\mathcal{B}">和<img src="https://www.zhihu.com/equation?tex=%5Csigma_%5Cmathcal%7BB%7D" alt="\sigma_\mathcal{B}">由当前batch计算得出；在Testing时<img src="https://www.zhihu.com/equation?tex=%5Cmu_%5Cmathcal%7BB%7D" alt="\mu_\mathcal{B}">和<img src="https://www.zhihu.com/equation?tex=%5Csigma_%5Cmathcal%7BB%7D" alt="\sigma_\mathcal{B}">应使用Training时保存的均值或类似的经过处理的值，而不是由当前batch计算。</p>
+<p>Batch Normalization中所有的操作都是平滑可导，这使得back propagation可以有效运行并学到相应的参数$\gamma$，$\beta$。需要注意的一点是Batch Normalization在training和testing时行为有所差别。Training时$\mu_\mathcal{B}$和$\sigma_\mathcal{B}$由当前batch计算得出；在Testing时$\mu_\mathcal{B}$和$\sigma_\mathcal{B}$应使用Training时保存的均值或类似的经过处理的值，而不是由当前batch计算。</p>
 <p>随机初始化，无Batch Normalization：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">W = tf.Variable(np.random.randn(node_in, node_out)) * 0.01</span><br><span class="line">......</span><br><span class="line">fc = tf.nn.relu(fc)</span><br></pre></td></tr></table></figure>
 <p><img src="https://pic3.zhimg.com/80/v2-eb33bba58b2c722da42d8759d190d42a_hd.jpg" alt="img"></p>
@@ -1006,6 +1006,125 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/08/test-my-site/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Younger">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="个人博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/08/test-my-site/" itemprop="url">test_my_site</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-08T16:34:42+08:00">
+                2018-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/08/做个认真写博客的人/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1096,125 +1215,6 @@
 <li>其他的想到了，再补充。</li>
 </ul>
 
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/08/test-my-site/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Younger">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="个人博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/07/08/test-my-site/" itemprop="url">test_my_site</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-07-08T16:34:42+08:00">
-                2018-07-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            
           
         
       
